@@ -1,0 +1,478 @@
+let isJumping = false;
+let jumpTimer = 0;
+const maxJumpTime = 200;
+const jumpHoldForce = -20;
+const xVeloDecay = 1000;
+const xVeloMax = 200;
+const xVeloAccel = 1000;
+const xAirAccel = 300;
+const jumpForce = -100;
+let ground;
+
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    backgroundColor: '#87CEEB',
+    physics: {
+      default: 'arcade',
+      arcade: {
+        gravity: { y: 1000 },
+        debug: true
+      }
+    },
+    scene: {
+      preload: preload,
+      create: create,
+      update: update
+    }
+  };
+  
+  let player;
+  let cursors;
+  
+  function preload() {
+    this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
+    this.load.image('player', 'https://labs.phaser.io/assets/sprites/phaser-dude.png');
+    this.load.bitmapFont('carrier_command', 'https://labs.phaser.io/assets/fonts/bitmap/carrier_command.png', 
+        'https://labs.phaser.io/assets/fonts/bitmap/carrier_command.xml');
+  }
+  
+  function create() {
+    // Ground
+    generateLevel(this);
+  
+    // Player
+    player = this.physics.add.sprite(100, 50, 'player').setScale(1);
+    player.setBounce(0);
+    player.setCollideWorldBounds(true);
+    player.setDragX(xVeloDecay);
+    player.setMaxVelocity(xVeloMax, 1000);
+  
+    this.physics.add.collider(player, ground);
+  
+    // Controls
+    cursors = this.input.keyboard.createCursorKeys();
+  }
+
+  function getDate(){
+    // Get date
+    const date = new Date();
+
+    // Convert day of week to string
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayIndex = date.getDay();
+    const dayString = days[dayIndex];
+
+    // Convert month to string
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+         'September', 'October', 'November', 'December'];
+    const monthIndex = date.getMonth();
+    const monthString = months[monthIndex];
+
+    // Get last bits
+    const year =  date.getFullYear();
+    const day = date.getDate();
+
+    // Determine date suffix
+    let suffix = "";
+    if (day % 10 === 1 && day !== 11){
+        suffix = "st";
+    }
+    else if (day % 10 === 2 && day !== 12){
+        suffix = "nd";
+    }
+    else if (day % 10 === 3 && day !== 13){
+        suffix = "rd";
+    }
+    else {
+        suffix = "th";
+    };
+
+    // Concatenate date
+    const finalDate = dayString + " " + monthString 
+    + " " + day + suffix + ", " +  year;
+
+    console.log(finalDate);
+    return finalDate;
+  }
+
+    function generateLevel(scene){
+    const dateString = getDate();
+    const startX = 50;
+    const startY = 50;
+    const spacing = 100;
+    const tileSize = 32;
+    const numRows = 5;
+    const numCols = 4;
+
+    ground = scene.physics.add.staticGroup();
+
+    for (let i = 0; i < dateString.length; i++) {
+        const ch = dateString[i];
+        const xGap = startX + i * spacing;
+
+        // Grab tilemap
+        let map = getTile(ch);
+        if (map === 0){
+            continue;
+        }
+        // Generate ground based on tilemaps
+        // CHANGE THIS IF YOU ALTER THE TILEMAPPINGS
+        for(let row=0; row<numRows; row++){
+            for(let col=0; col<numCols; col++){
+                if (map[row][col]==="#"){
+                    const x = startX + col * tileSize + xGap;
+                    const y = startY + row * tileSize;
+
+                    ground.create(x + 8, y + 32)
+                    .setDisplaySize(tileSize, tileSize)
+                    .refreshBody();
+                }
+            }
+        }
+    }
+}
+
+    function getTile(tileMap){
+        if (tileMap === " "){
+            return 0;
+        }
+        const map = charTilemaps[tileMap];
+        return map;        
+    }
+
+    const charTilemaps = {
+        'A': [
+            ".##.",
+            "#..#",
+            "####",
+            "#..#",
+            "#..#"
+        ],
+        'a': [
+            "....",
+            "....",
+            ".##.",
+            "#.#.",
+            ".###"
+        ],
+        'b': [
+            "#...",
+            "#...",
+            "###.",
+            "#..#",
+            "####"
+        ],
+        'c': [
+            "....",
+            "....",
+            ".###",
+            "#...",
+            ".###"
+        ],
+        'D': [
+            "##..",
+            "#.#.",
+            "#..#",
+            "#.#.",
+            "##.."
+        ],
+        'd': [
+            "...#",
+            "...#",
+            ".###",
+            "#..#",
+            "####"
+        ],
+        'e': [
+            "....",
+            "....",
+            "###.",
+            "#.##",
+            "###."
+        ],
+        'F': [
+            "###.",
+            "#...",
+            "##.",
+            "#...",
+            "#..."
+        ],
+        'g': [
+            "....",
+            "###.",
+            "###.",
+            "#...",
+            "####"
+        ],
+        'h': [
+            "#...",
+            "#...",
+            "###.",
+            "#..#",
+            "#..#"
+        ],
+        'i': [
+            "....",
+            ".#..",
+            "....",
+            ".#..",
+            ".#.."
+        ],
+        'J': [
+            "..#.",
+            "..#.",
+            "..#.",
+            "#.#.",
+            ".#.."
+        ],
+        'l': [
+            "#...",
+            "#...",
+            "#...",
+            "#...",
+            "##.."
+        ],
+        'M': [
+            "#..#",
+            "####",
+            "#..#",
+            "#..#",
+            "#..#"
+        ],
+        'm': [
+            "....",
+            "....",
+            "#.##",
+            "##.#",
+            "#..#"
+        ],
+        'N': [
+            "#..#",
+            "#..#",
+            "##.#",
+            "#.##",
+            "#..#"
+        ],
+        'n': [
+            "....",
+            "....",
+            "###.",
+            "#..#",
+            "#..#"
+        ],
+        'O': [
+            ".##.",
+            "#..#",
+            "#..#",
+            "#..#",
+            ".##."
+        ],
+        'o': [
+            "....",
+            "....",
+            ".##.",
+            "#..#",
+            ".##."
+        ],
+        'p': [
+            "....",
+            "##.",
+            "#.#.",
+            "###.",
+            "#..."
+        ],
+        'r': [
+            "....",
+            "....",
+            "###",
+            "#...",
+            "#..."
+        ],
+        'S': [
+            ".##.",
+            "#...",
+            ".#..",
+            "..#.",
+            "###."
+        ],
+        's': [
+            "....",
+            ".##.",
+            ".#..",
+            "..#.",
+            "###."
+        ],
+        'T': [
+            "###.",
+            ".#..",
+            ".#..",
+            ".#..",
+            ".#.."
+        ],
+        't': [
+            ".#..",
+            "###.",
+            ".#..",
+            ".#..",
+            ".#.."
+        ],
+        'u': [
+            "....",
+            "....",
+            "#.#.",
+            "#.#.",
+            "###."
+        ],
+        'v': [
+            "....",
+            "....",
+            "#..#",
+            ".#.#",
+            "..#."
+        ],
+        'W': [
+            "#..#",
+            "#..#",
+            "#..#",
+            "####",
+            "#..#"
+        ],
+        'y': [
+            "....",
+            "#..#",
+            ".###",
+            "...#",
+            "###."
+        ],
+        '0': [
+            ".##.",
+            "#.##",
+            "##.#",
+            "#..#",
+            ".##."
+        ],
+        '1': [
+            ".#..",
+            "##..",
+            ".#..",
+            ".#..",
+            ".#.."
+        ],
+        '2': [
+            "###.",
+            "..#.",
+            ".#..",
+            "#...",
+            "###."
+        ],
+        '3': [
+            "###.",
+            "..#.",
+            ".#..",
+            "..#..",
+            "###."
+        ],
+        '4': [
+            "#.#.",
+            "#.#.",
+            "###.",
+            "..#.",
+            "..#."
+        ],
+        '5': [
+            "###.",
+            "#...",
+            "##..",
+            "..#.",
+            "##.."
+        ],
+        '6': [
+            ".##.",
+            "#...",
+            "##..",
+            "#.#.",
+            ".#.."
+        ],
+        '7': [
+            "###.",
+            "..#.",
+            ".#..",
+            "#...",
+            "#..."
+        ],
+        '8': [
+            ".#..",
+            "#.#.",
+            ".#..",
+            "#.#.",
+            ".#.."
+        ],
+        '9': [
+            ".#..",
+            "#.#.",
+            ".##.",
+            "..#.",
+            "##.."
+        ],
+        ' ': [
+            "....",
+            "....",
+            "....",
+            "....",
+            "...."
+        ],
+        ',': [
+            "....",
+            "....",
+            "....",
+            ".#..",
+            "##.."
+        ]
+
+    }
+  
+  function update(time, delta) {
+    let xVelocity = player.body.velocity.x;
+    let yVelocity = player.body.velocity.y;
+    // Logic for acceleration
+    if (cursors.left.isDown && !cursors.right.isDown) {
+        if (player.body.touching.down){
+        player.setAccelerationX(-xVeloAccel)
+        }
+        else {
+            player.setAccelerationX(-xAirAccel)
+        }
+    } else if (cursors.right.isDown && !cursors.left.isDown) {
+        if (player.body.touching.down){
+            player.setAccelerationX(xVeloAccel)
+            }
+            else {
+                player.setAccelerationX(xAirAccel)
+            }
+    } else {
+        player.setAccelerationX(0);
+    }
+  //Jumping logic and decay
+    if (Phaser.Input.Keyboard.JustDown(cursors.up) && player.body.touching.down && !isJumping) {
+      isJumping = true;
+      
+      jumpTimer = 0;
+      player.setVelocityY(jumpForce);
+    }
+    if (isJumping && cursors.up.isDown){
+        jumpTimer += delta;
+        console.log(jumpTimer);
+        if (jumpTimer < maxJumpTime){
+            player.setVelocityY(player.body.velocity.y + jumpHoldForce);
+        }
+    }
+
+    if (isJumping && (!cursors.up.isDown || jumpTimer >= maxJumpTime)) {
+        isJumping = false;
+    }
+
+  }
+  const game = new Phaser.Game(config);
+

@@ -1,7 +1,8 @@
 let isJumping = false;
 let jumpTimer = 0;
 const maxJumpTime = 200;
-const jumpHoldForce = -20;
+//Jump height
+const jumpHoldForce = -200;
 const xVeloDecay = 1000;
 const xVeloMax = 200;
 const xVeloAccel = 1000;
@@ -11,8 +12,8 @@ let ground;
 
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: window.innerWidth,
+    height: window.innerHeight/1.5,
     backgroundColor: '#87CEEB',
     physics: {
       default: 'arcade',
@@ -40,8 +41,9 @@ const config = {
   
   function create() {
     // Ground
-    generateLevel(this);
+    const levelWidth = generateLevel(this);
   
+
     // Player
     player = this.physics.add.sprite(100, 50, 'player').setScale(1);
     player.setBounce(0);
@@ -50,6 +52,14 @@ const config = {
     player.setMaxVelocity(xVeloMax, 1000);
   
     this.physics.add.collider(player, ground);
+
+    // Camera
+    scene = this;
+    scene.cameras.main.startFollow(player);
+    scene.cameras.main.setBounds(0, 0, levelWidth + 120, config.height);
+    scene.physics.world.setBounds(0, 0, levelWidth + 120, config.height);
+    scene.cameras.main.setZoom(0.75);
+
   
     // Controls
     cursors = this.input.keyboard.createCursorKeys();
@@ -100,12 +110,12 @@ const config = {
     function generateLevel(scene){
     const dateString = getDate();
     const startX = 50;
-    const startY = 50;
+    const startY = 250;
     const spacing = 240;
     const tileSize = 32;
     const numRows = 16;
     const numCols = 7;
-
+    const levelWidth = startX + dateString.length * spacing;
     ground = scene.physics.add.staticGroup();
 
     for (let i = 0; i < dateString.length; i++) {
@@ -132,6 +142,7 @@ const config = {
             }
         }
     }
+    return levelWidth;
 }
 
     function getTile(tileMap){
@@ -183,7 +194,7 @@ const config = {
             ".......",
 
         ],
-        '': [
+        'b': [
             ".......",
             ".......",
             ".......",
@@ -755,7 +766,7 @@ const config = {
             ".......",
 
         ],
-        '': [
+        '3': [
             ".......",
             ".......",
             "..###..",
@@ -774,7 +785,7 @@ const config = {
             ".......",
 
         ],
-        '': [
+        '4': [
             ".......",
             ".......",
             ".....#.",
@@ -891,9 +902,9 @@ const config = {
         ' ': [
             ".......",
             ".......",
+            "....#..",
             ".......",
-            ".......",
-            ".......",
+            ".#.....",
             ".......",
             ".......",
             ".......",
@@ -970,6 +981,9 @@ const config = {
     if (isJumping && (!cursors.up.isDown || jumpTimer >= maxJumpTime)) {
         isJumping = false;
     }
+    window.addEventListener('resize', () => {
+        game.scale.resize(window.innerWidth, window.innerHeight);
+      });
 
   }
   const game = new Phaser.Game(config);

@@ -2,18 +2,19 @@ let isJumping = false;
 let jumpTimer = 0;
 const maxJumpTime = 200;
 //Jump height
-const jumpHoldForce = -200;
+const jumpHoldForce = -20;
 const xVeloDecay = 1000;
 const xVeloMax = 200;
 const xVeloAccel = 1000;
 const xAirAccel = 300;
-const jumpForce = -100;
+const jumpForce = -200;
+const xWallJumpVelo = 50;
 let ground;
 
 const config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
-    height: window.innerHeight/1.5,
+    height: window.innerHeight,
     backgroundColor: '#87CEEB',
     physics: {
       default: 'arcade',
@@ -49,7 +50,10 @@ const config = {
     player.setBounce(0);
     player.setCollideWorldBounds(true);
     player.setDragX(xVeloDecay);
+    player.setDragY(0);
     player.setMaxVelocity(xVeloMax, 1000);
+    player.setSize(player.width - 4, player.height - 2);
+    player.setOffset(2, 1);
   
     this.physics.add.collider(player, ground);
 
@@ -64,7 +68,7 @@ const config = {
     // Controls
     cursors = this.input.keyboard.createCursorKeys();
   }
-
+  // Function to create date format used in levels
   function getDate(){
     // Get date
     const date = new Date();
@@ -106,7 +110,7 @@ const config = {
     console.log(finalDate);
     return finalDate;
   }
-
+  //Construct level from tilemaps
     function generateLevel(scene){
     const dateString = getDate();
     const startX = 50;
@@ -144,7 +148,7 @@ const config = {
     }
     return levelWidth;
 }
-
+    // Getter
     function getTile(tileMap){
         console.log(tileMap);
         if (tileMap === null){
@@ -154,7 +158,7 @@ const config = {
         const map = charTilemaps[tileMap];
         return map;        
     }
-
+    // These are tilemaps for every letter needed in date format
     const charTilemaps = {
         'A': [
             ".......",
@@ -921,7 +925,7 @@ const config = {
         ',': [
             ".......",
             ".......",
-            ".......",
+            "....##.",
             ".......",
             ".......",
             ".......",
@@ -945,6 +949,9 @@ const config = {
   function update(time, delta) {
     let xVelocity = player.body.velocity.x;
     let yVelocity = player.body.velocity.y;
+    const touchingLeft = player.body.blocked.left;
+    const touchingRight = player.body.blocked.right;
+    const onWall = (touchingLeft || touchingRight) && !player.body.blocked.down
     // Logic for acceleration
     if (cursors.left.isDown && !cursors.right.isDown) {
         if (player.body.touching.down){
@@ -964,23 +971,37 @@ const config = {
         player.setAccelerationX(0);
     }
   //Jumping logic and decay
-    if (Phaser.Input.Keyboard.JustDown(cursors.up) && player.body.touching.down && !isJumping) {
-      isJumping = true;
-      
-      jumpTimer = 0;
-      player.setVelocityY(jumpForce);
+    if (Phaser.Input.Keyboard.JustDown(cursors.up) && !isJumping) {
+        if(player.body.blocked.down){
+            isJumping = true;
+            jumpTimer = 0;
+            player.setVelocityY(jumpForce);
+        }
+        // Wall jump logic
+        else if (onWall){
+            isJumping = true;
+            jumpTimer = 0;
+            player.setVelocityY(jumpForce);
+            player.setVelocityX(touchingLeft ? xWallJumpVelo : - xWallJumpVelo);
+        }
     }
-    if (isJumping && cursors.up.isDown){
+    // Continue jump
+    else if (isJumping && cursors.up.isDown){
         jumpTimer += delta;
         console.log(jumpTimer);
         if (jumpTimer < maxJumpTime){
             player.setVelocityY(player.body.velocity.y + jumpHoldForce);
         }
     }
-
+    // End of jump
     if (isJumping && (!cursors.up.isDown || jumpTimer >= maxJumpTime)) {
         isJumping = false;
     }
+    // Wall drag
+    if (!isJumping && onWall && yVelocity >= 0){
+        player.setVelocityY(150);
+    }
+    // Resize window
     window.addEventListener('resize', () => {
         game.scale.resize(window.innerWidth, window.innerHeight);
       });

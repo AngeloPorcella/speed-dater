@@ -1,7 +1,16 @@
+/*
+TODO:
+Spash screen that is pixelated NYT cover - Zoom into date location
+Frog spritesheet
+Adjust letter gaps specifically on 'r'
+Add timer
+Add increase and decrease gems
+Add start and finish
+*/
+
 let isJumping = false;
 let jumpTimer = 0;
 const maxJumpTime = 200;
-//Jump height
 const jumpHoldForce = -20;
 const xVeloDecay = 1000;
 const xVeloMax = 200;
@@ -15,7 +24,7 @@ const config = {
 type: Phaser.AUTO,
 width: window.innerWidth,
 height: window.innerHeight,
-backgroundColor: '#87CEEB',
+backgroundColor: '#FFFFFF',
 physics: {
 default: 'arcade',
 arcade: {
@@ -45,7 +54,7 @@ function create() {
     // Player
     player = this.physics.add.sprite(100, 50, 'player').setScale(1);
     player.setBounce(0);
-    player.setCollideWorldBounds(true);
+    player.setCollideWorldBounds(false);
     player.setDragX(xVeloDecay);
     player.setDragY(0);
     player.setMaxVelocity(xVeloMax, 1000);
@@ -545,15 +554,15 @@ const charTilemaps = {
         ".......",
         ".......",
         ".......",
-        "#.###..",
-        "##.....",
-        "#......",
-        "#......",
-        "#......",
-        "#......",
-        "#......",
-        "#......",
-        "#......",
+        "#.####.",
+        ".#....#",
+        ".#.....",
+        ".#.....",
+        ".#.....",
+        ".#.....",
+        ".#.....",
+        ".#.....",
+        ".#.....",
         ".......",
 
     ],

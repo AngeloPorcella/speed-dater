@@ -2,10 +2,12 @@
 TODO:
 Spash screen that is pixelated NYT cover - Zoom into date location
 Frog spritesheet
-Adjust letter gaps specifically on 'r'
+
 Add timer
 Add increase and decrease gems
 Add start and finish
+Add reset on out of bounds
+Walls are sticky sometimes when sliding - not a major issue but is annoying
 */
 
 let isJumping = false;
@@ -20,6 +22,7 @@ const jumpForce = -200;
 const xWallJumpVelo = 50;
 let ground;
 
+
 const config = {
 type: Phaser.AUTO,
 width: window.innerWidth,
@@ -30,6 +33,9 @@ default: 'arcade',
 arcade: {
     gravity: { y: 1000 },
     debug: true
+    },
+render: {
+    pixelArt: true
 }
 },
 scene: {
@@ -48,11 +54,18 @@ function preload() {
 }
 
 function create() {
+
+    const graphics = this.add.graphics();
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillRect(0, 0, 32, 32);
+    graphics.generateTexture('blackTile', 32, 32);
+    graphics.destroy();
+
     // Ground
     const levelWidth = generateLevel(this);
 
     // Player
-    player = this.physics.add.sprite(100, 50, 'player').setScale(1);
+    player = this.physics.add.sprite(128, 256, 'player').setScale(1);
     player.setBounce(0);
     player.setCollideWorldBounds(false);
     player.setDragX(xVeloDecay);
@@ -68,7 +81,12 @@ function create() {
     scene.cameras.main.startFollow(player);
     scene.cameras.main.setBounds(0, 0, levelWidth + 120, config.height);
     scene.physics.world.setBounds(0, 0, levelWidth + 120, config.height);
-    scene.cameras.main.setZoom(0.75);
+    scene.cameras.main.setZoom(.75);
+
+    // Debug
+        scene.physics.world.createDebugGraphic();
+        scene.physics.world.drawDebug = true;
+        scene.physics.world.debugGraphic.setAlpha(0.7);
 
 
     // Controls
@@ -116,8 +134,12 @@ function getDate(){
     console.log(finalDate);
     return finalDate;
 }
+
+
 //Construct level from tilemaps
 function generateLevel(scene){
+    const placed = new Set();
+
     const dateString = getDate();
     const startX = 50;
     const startY = 250;
@@ -142,11 +164,13 @@ function generateLevel(scene){
         for(let row=0; row<numRows; row++){
             for(let col=0; col<numCols; col++){
                 if (map[row][col]==="#"){
-                    const x = startX + col * tileSize + xGap;
-                    const y = startY + row * tileSize;
+                    const x = Math.round(startX + xGap + col * tileSize);
+                    const y = Math.round(startY + row * tileSize);
+                    const key = `${x}, ${y}`;
+                    if (placed.has(key)) continue;
+                    placed.add(key);
 
-                    ground.create(x + 8, y + 32, 'ground')
-                    .setDisplaySize(tileSize, tileSize)
+                    ground.create(x + 8, y + 32, 'blackTile')
                     .refreshBody();
                 }
             }
@@ -931,9 +955,9 @@ const charTilemaps = {
     ',': [
         ".......",
         ".......",
-        "....##.",
         ".......",
         ".......",
+        ".##....",
         ".......",
         ".......",
         ".......",
@@ -957,7 +981,11 @@ function update(time, delta) {
     let yVelocity = player.body.velocity.y;
     const touchingLeft = player.body.blocked.left;
     const touchingRight = player.body.blocked.right;
+    const caughtRoof = player.body.blocked.up;
     const onWall = (touchingLeft || touchingRight) && !player.body.blocked.down
+    if (touchingLeft){
+        console.log("touching wall!");
+    }
     // Logic for acceleration
     if (cursors.left.isDown && !cursors.right.isDown) {
         if (player.body.touching.down){
@@ -993,20 +1021,22 @@ function update(time, delta) {
     }
     // Continue jump
     else if (isJumping && cursors.up.isDown){
+        console.log("ContinueJump!")
         jumpTimer += delta;
-        console.log(jumpTimer);
         if (jumpTimer < maxJumpTime){
             player.setVelocityY(player.body.velocity.y + jumpHoldForce);
         }
+    }
+     // Wall drag
+    else if (!isJumping && onWall && yVelocity >= 0){
+        player.setVelocityY(100);
     }
     // End of jump
     if (isJumping && (!cursors.up.isDown || jumpTimer >= maxJumpTime)) {
         isJumping = false;
     }
-    // Wall drag
-    if (!isJumping && onWall && yVelocity >= 0){
-        player.setVelocityY(150);
-    }
+   
+
     // Resize window
     window.addEventListener('resize', () => {
         game.scale.resize(window.innerWidth, window.innerHeight);

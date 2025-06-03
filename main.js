@@ -2,7 +2,6 @@
 TODO:
 Spash screen that is pixelated NYT cover - Zoom into date location
 Frog spritesheet
-
 Add timer
 Add increase and decrease gems
 Add start and finish
@@ -21,6 +20,9 @@ const xAirAccel = 300;
 const jumpForce = -200;
 const xWallJumpVelo = 50;
 let ground;
+let timerText;
+let startTime = 0;
+let timerStarted = false;
 
 
 const config = {
@@ -87,6 +89,22 @@ function create() {
         scene.physics.world.createDebugGraphic();
         scene.physics.world.drawDebug = true;
         scene.physics.world.debugGraphic.setAlpha(0.7);
+
+    // Timer
+
+        timerText = this.add.text(1,1, 'Time: 0.000', {
+            fontSize: '20px',
+            fill: '#000000',
+            fontFamily: 'monospace'
+        });
+
+        this.input.keyboard.on('keydown', () => {
+            if (!timerStarted) {
+                timerStarted = true;
+                startTime = this.time.now;
+            }
+        });
+        timerText.setScrollFactor(0);
 
 
     // Controls
@@ -198,7 +216,7 @@ const charTilemaps = {
         "...#...",
         "..#.#..",
         "..#.#..",
-        "..#.#..",
+        "..#.#-.",
         ".#...#.",
         ".#...#.",
         ".#...#.",
@@ -215,7 +233,7 @@ const charTilemaps = {
         ".......",
         ".......",
         ".......",
-        ".......",
+        "...+...",
         ".####..",
         "#....#.",
         "#....#.",
@@ -268,7 +286,7 @@ const charTilemaps = {
     ],
     'D': [
         ".......",
-        ".......",
+        ".+.....",
         "#####..",
         "#....#.",
         "#.....#",
@@ -292,7 +310,7 @@ const charTilemaps = {
         "......#",
         "......#",
         "......#",
-        "..###.#",
+        "..###-#",
         ".#...##",
         "#.....#",
         "#.....#",
@@ -310,7 +328,7 @@ const charTilemaps = {
         ".......",
         ".......",
         ".......",
-        ".......",
+        ".....+..",
         "..###..",
         ".#...#.",
         "#.....#",
@@ -331,7 +349,7 @@ const charTilemaps = {
         "#......",
         "#......",
         "#......",
-        "#......",
+        "#.-....",
         "#......",
         "######.",
         "#......",
@@ -349,7 +367,7 @@ const charTilemaps = {
         ".......",
         ".......",
         ".......",
-        ".......",
+        ".....+.",
         ".####.#",
         "#....#.",
         "#....#.",
@@ -368,7 +386,7 @@ const charTilemaps = {
         ".......",
         "#......",
         "#......",
-        "#......",
+        "#..-...",
         "#.###..",
         "##...#.",
         "#.....#",
@@ -390,7 +408,7 @@ const charTilemaps = {
         ".......",
         "...#...",
         "...#...",
-        "...#...",
+        "...#-..",
         "...#...",
         "...#...",
         "...#...",
@@ -413,7 +431,7 @@ const charTilemaps = {
         "......#",
         "#.....#",
         "#.....#",
-        "#.....#",
+        "#.-...#",
         ".#...#.",
         "..###..",
         ".......",
@@ -448,7 +466,7 @@ const charTilemaps = {
         "##...##",
         "#.#.#.#",
         "#.#.#.#",
-        "#.#.#.#",
+        "#.#-#.#",
         "#.#.#.#",
         "#..#..#",
         "#..#..#",
@@ -464,7 +482,7 @@ const charTilemaps = {
         ".......",
         ".......",
         ".......",
-        "#.#..#.",
+        "#.#.+#.",
         "#..##.#",
         "#..#..#",
         "#..#..#",
@@ -1004,7 +1022,7 @@ function update(time, delta) {
     } else {
         player.setAccelerationX(0);
     }
-//Jumping logic and decay
+    //Jumping logic and decay
     if (Phaser.Input.Keyboard.JustDown(cursors.up) && !isJumping) {
         if(player.body.blocked.down){
             isJumping = true;
@@ -1035,13 +1053,17 @@ function update(time, delta) {
     if (isJumping && (!cursors.up.isDown || jumpTimer >= maxJumpTime)) {
         isJumping = false;
     }
+    // Update timer
+    if (timerStarted) {
+        const elapsed = (this.time.now - startTime) / 1000;
+        timerText.setText(`Time: ${elapsed.toFixed(3)}`);
+    }
    
 
     // Resize window
     window.addEventListener('resize', () => {
         game.scale.resize(window.innerWidth, window.innerHeight);
     });
-
     }
 const game = new Phaser.Game(config);
 
